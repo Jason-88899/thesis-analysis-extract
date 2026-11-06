@@ -1,6 +1,6 @@
 ---
 name: thesis-analysis-extract
-description: "使用纯 Python 标准库按需提取本地论文、学位论文和技术报告的 PDF/Word 文本，先列大纲，再检索关键词与目标页，减少无关内容进入上下文。适用于总结研究内容、创新点与机理，以及提取实验流程、药品用量和工艺参数，也适用于无法安装 PDF/Office 依赖的离线环境。Use for selective reading of local papers, evidence-grounded summaries, and extraction of experimental procedures and reagent amounts."
+description: "帮助 AI 阅读 PDF、Word 论文和报告，整理主要内容、创新点、机理、实验步骤及药品用量。适合读论文、总结研究内容或提取实验方法时使用。"
 ---
 
 # 论文与报告按需阅读

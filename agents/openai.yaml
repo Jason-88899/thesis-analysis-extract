@@ -1,4 +1,4 @@
 interface:
-  display_name: "Thesis Analysis Extract"
-  short_description: "Token-efficient PDF/Word extraction: outline, grep, target pages"
-  default_prompt: "Use $thesis-analysis-extract to read this thesis/paper with the low-token workflow (outline -> grep -> target pages), then summarise its main content and experimental procedure."
+  display_name: "论文阅读助手"
+  short_description: "帮助阅读 PDF 和 Word 论文，整理主要内容、机理、实验步骤及药品用量"
+  default_prompt: "使用 $thesis-analysis-extract 阅读这篇论文，总结主要内容、创新点和机理，并整理实验步骤、药品及用量。"
