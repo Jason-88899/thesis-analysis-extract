@@ -8,6 +8,14 @@
 
 Supports PDF and Word. Check the outline, search for keywords, then read the pages you need to avoid unnecessary text.
 
+**v1.1.0：更精简的指令和可选的 `--lean` 模式，减少空行与提示文字，保留正文和来源页码。旧版命令仍可使用。**
+
+**v1.1.0: Shorter skill instructions and an optional `--lean` mode reduce blank lines and routine messages while keeping body text and source pages. Existing commands still work.**
+
+节省效果和兼容性验证见 [测试报告](references/token-benchmark.md)。效果取决于文档及分词器，并非所有输出都会减少 token。
+
+See the [validation report](references/token-benchmark.md) for measured savings and compatibility checks. Results depend on the document and tokenizer; not every output uses fewer tokens.
+
 ## 怎么用 / How to use
 
 将这个目录安装到支持 `SKILL.md` 的 AI 助手中，然后说：
@@ -31,6 +39,10 @@ python scripts/extract_text.py "paper.pdf" --outline
 python scripts/extract_text.py "paper.pdf" --grep "实验|Experimental|Methods" -A 20
 python scripts/extract_text.py "paper.pdf" --pages 3-5
 ```
+
+想减少交给 AI 的文字，可以在这些命令后加 `--lean`。它会将页码标记简化为 `[p3]`，不自动删正文、参考文献或重要警告。处理普通文本时也会去掉空行；需要保留空白布局时，不加此参数。
+
+Add `--lean` to these commands to reduce the text sent to AI. It shortens page markers to `[p3]` without automatically removing body text, references, or important warnings. It also removes blank lines in plain text; omit it when whitespace layout matters.
 
 ## 使用前了解 / Before you start
 

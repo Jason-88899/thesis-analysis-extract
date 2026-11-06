@@ -658,6 +658,24 @@ def estimate_tokens(text):
     return int(round(cjk + (len(text) - cjk) / 4.0))
 
 
+def lean_text(text, pdf_markers=False):
+    """Trim output overhead, preserving body lines, order and indentation.
+
+    This never removes repeated content, references, numbers or units.
+    PDF page metadata is shortened only when page markers are enabled.
+    """
+    lines = []
+    for line in text.split('\n'):
+        if not line.strip():
+            continue
+        if pdf_markers:
+            match = re.fullmatch(r'===== PAGE ([0-9]+) =====', line)
+            if match:
+                line = '[p%s]' % match.group(1)
+        lines.append(line.rstrip(' \t\r'))
+    return '\n'.join(lines)
+
+
 PAGE_NO_RE = re.compile(r'^\s*(?:page\s*)?\d{1,4}\s*$', re.I)
 
 
@@ -951,6 +969,9 @@ def main(argv=None):
     ap.add_argument('--compact', action='store_true',
                     help='drop repeated headers/footers/watermarks and page numbers, '
                          'join hyphenated line breaks, collapse blank lines')
+    ap.add_argument('--lean', action='store_true',
+                    help='remove blank lines and routine summaries; shorten PDF '
+                         'page markers to [pN]; keep body text and warnings')
     ap.add_argument('--drop-refs', action='store_true',
                     help='cut the reference list')
     ap.add_argument('--max-chars', type=int, default=0,
@@ -958,8 +979,12 @@ def main(argv=None):
     ap.add_argument('--stats', action='store_true',
                     help='print per-page character/token stats to stderr')
     ap.add_argument('--version', action='version',
-                    version='thesis-analysis-extract 1.0.0')
+                    version='thesis-analysis-extract 1.1.0')
     args = ap.parse_args(argv)
+
+    def report(*values):
+        if not args.lean:
+            print(*values, file=sys.stderr)
 
     if min(args.before, args.after, args.max_chars) < 0 or args.max_matches < 1:
         ap.error('context and character limits must be nonnegative; matches must be positive')
@@ -1005,8 +1030,8 @@ def main(argv=None):
             if args.outline and not args.grep:
                 items = pdf_outline(pages)
                 text = '\n'.join('p%-3d %s' % (n, s) for n, s in items)
-                print('\n--- outline: %d headings | %d pages total ---'
-                      % (len(items), total), file=sys.stderr)
+                report('\n--- outline: %d headings | %d pages total ---'
+                       % (len(items), total))
             else:
                 text = _render_pages(pages, marker=not args.no_page_marker,
                                      compact=args.compact, drop_refs=args.drop_refs)
@@ -1014,12 +1039,11 @@ def main(argv=None):
                     text, n_hits, n_blocks = grep_text(
                         text, args.grep, before=args.before, after=args.after,
                         ignore_case=not args.case_sensitive, max_matches=args.max_matches)
-                    print('\n--- grep: %d hits in %d blocks (of %d pages) ---'
-                          % (n_hits, n_blocks, len(pages)), file=sys.stderr)
+                    report('\n--- grep: %d hits in %d blocks (of %d pages) ---'
+                           % (n_hits, n_blocks, len(pages)))
                 else:
-                    print('\n--- pages: %d/%d | chars: %d | ~%d tokens ---'
-                          % (len(pages), total, len(text), estimate_tokens(text)),
-                          file=sys.stderr)
+                    report('\n--- pages: %d/%d | chars: %d | ~%d tokens ---'
+                           % (len(pages), total, len(text), estimate_tokens(text)))
                 if args.stats:
                     per = []
                     for n, t in pages:
@@ -1038,16 +1062,16 @@ def main(argv=None):
                 text = strip_references(text)
             if args.outline and not args.grep:
                 text = '\n'.join('#' * min(l, 6) + ' ' + t for l, t in meta['headings'])
-                print('\n--- outline: %d headings ---' % len(meta['headings']), file=sys.stderr)
+                report('\n--- outline: %d headings ---' % len(meta['headings']))
             elif args.grep:
                 text, n_hits, n_blocks = grep_text(
                     text, args.grep, before=args.before, after=args.after,
                     ignore_case=not args.case_sensitive, max_matches=args.max_matches)
-                print('\n--- grep: %d hits in %d blocks ---' % (n_hits, n_blocks), file=sys.stderr)
+                report('\n--- grep: %d hits in %d blocks ---' % (n_hits, n_blocks))
             else:
-                print('\n--- word: %d paragraphs, %d tables | chars: %d | ~%d tokens ---'
-                      % (meta['paragraphs'], meta['tables'], len(text),
-                         estimate_tokens(text)), file=sys.stderr)
+                report('\n--- word: %d paragraphs, %d tables | chars: %d | ~%d tokens ---'
+                       % (meta['paragraphs'], meta['tables'], len(text),
+                          estimate_tokens(text)))
         else:
             text = _read_text_file(path)
             raw_chars = len(text)
@@ -1059,10 +1083,10 @@ def main(argv=None):
                 text, n_hits, n_blocks = grep_text(
                     text, args.grep, before=args.before, after=args.after,
                     ignore_case=not args.case_sensitive, max_matches=args.max_matches)
-                print('\n--- grep: %d hits in %d blocks ---' % (n_hits, n_blocks), file=sys.stderr)
+                report('\n--- grep: %d hits in %d blocks ---' % (n_hits, n_blocks))
             else:
-                print('\n--- text: chars: %d | ~%d tokens ---'
-                      % (len(text), estimate_tokens(text)), file=sys.stderr)
+                report('\n--- text: chars: %d | ~%d tokens ---'
+                       % (len(text), estimate_tokens(text)))
     except zipfile.BadZipFile:
         print('ERROR: file is not a valid .docx (encrypted or corrupted). '
               'Word-encrypted documents are not supported; decrypt first.', file=sys.stderr)
@@ -1073,6 +1097,11 @@ def main(argv=None):
     except Exception as exc:  # noqa: BLE001 - surface a usable message
         print('ERROR: failed to parse %s: %s' % (path, exc), file=sys.stderr)
         return 2
+
+    if args.lean:
+        text = lean_text(text, pdf_markers=(kind == 'pdf'
+                                          and (not args.outline or bool(args.grep))
+                                          and not args.no_page_marker))
 
     if args.max_chars and len(text) > args.max_chars:
         cut = args.max_chars

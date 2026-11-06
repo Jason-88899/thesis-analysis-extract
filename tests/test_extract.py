@@ -181,7 +181,7 @@ class TestCliBasics(BaseCase):
     def test_version(self):
         code, out, _ = run_cli('--version')
         self.assertEqual(code, 0)
-        self.assertIn('1.0.0', out)
+        self.assertIn('1.1.0', out)
 
     def test_missing_file(self):
         code, _, err = run_cli(os.path.join(self.tmp, 'nope.pdf'))
