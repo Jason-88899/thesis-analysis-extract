@@ -1,6 +1,6 @@
 ---
 name: thesis-analysis-extract
-description: "帮助 AI 阅读 PDF、Word 论文和报告，整理主要内容、创新点、机理、实验步骤及药品用量。适合读论文、总结研究内容或提取实验方法时使用。"
+description: "帮助 AI 阅读 PDF、Word 论文和报告，整理主要内容、创新点、机理、实验步骤及药品用量。适合读论文、总结研究内容或提取实验方法时使用。 Help AI read PDF and Word papers and reports, summarizing their main findings, innovations, mechanisms, experimental steps, and chemical amounts. Use when reading papers, summarizing research, or extracting experimental methods."
 ---
 
 # 论文与报告按需阅读
