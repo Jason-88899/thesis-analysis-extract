@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Private inputs, output, credentials and archives
+*.pdf
+*.doc
+*.docx
+*.docm
+*.dotx
+*.dotm
+*.7z
+*.zip
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+credentials*.json
+*secret*.json
+output/
+outputs/
+downloads/
+.extract_test/
+tmp/
+_testtmp/
+extract_test_*/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
