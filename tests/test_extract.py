@@ -81,6 +81,58 @@ def make_pdf(path, pages_lines, footer=None):
         fh.write(bytes(out))
 
 
+def _write_pdf_objects(path, objects):
+    """Serialize an object-number -> bytes mapping into a tiny valid PDF."""
+    out = bytearray(b'%PDF-1.4\n%\xe2\xe3\xcf\xd3\n')
+    offsets = {}
+    for num in sorted(objects):
+        offsets[num] = len(out)
+        out += b'%d 0 obj\n' % num + objects[num] + b'\nendobj\n'
+    xref_at = len(out)
+    size = max(objects) + 1
+    out += b'xref\n0 %d\n' % size
+    out += b'0000000000 65535 f \n'
+    for num in range(1, size):
+        out += b'%010d 00000 n \n' % offsets.get(num, 0)
+    out += (b'trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n'
+            % (size, xref_at))
+    with open(path, 'wb') as fh:
+        fh.write(bytes(out))
+
+
+def make_pdf_with_surrogate_cmap(path):
+    """PDF whose ToUnicode bfrange destination is a UTF-16BE surrogate pair.
+
+    <D835DC50> is U+1D450 written as a surrogate pair, which is what some
+    real PDFs (e.g. publisher supporting information) ship. Parsing it with
+    chr(int(hex, 16)) raised OverflowError: Python int too large to convert
+    to C int.
+    """
+    content = _content_stream([
+        'Radiative cooling test sample A',
+        'Second body line of the surrogate cmap fixture.',
+    ])
+    cmap = (
+        b'/CIDInit /ProcSet findresource begin\n'
+        b'12 dict begin\nbegincmap\n'
+        b'1 begincodespacerange\n<00> <FF>\nendcodespacerange\n'
+        b'2 beginbfrange\n'
+        b'<0020> <007E> <0020>\n'
+        b'<0041> <0041> <D835DC50>\n'
+        b'endbfrange\n'
+        b'endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend')
+    objects = {
+        1: b'<< /Type /Catalog /Pages 2 0 R >>',
+        2: b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+        3: (b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
+            b'/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>'),
+        4: b'<< /Length %d >>\nstream\n' % len(content) + content + b'\nendstream',
+        5: b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /ToUnicode 6 0 R >>',
+        6: b'<< /Length %d >>\nstream\n' % len(cmap) + cmap + b'\nendstream',
+    }
+    _write_pdf_objects(path, objects)
+
+
 DOCX_BODY = (
     '<w:body>'
     '<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr>'
@@ -181,7 +233,7 @@ class TestCliBasics(BaseCase):
     def test_version(self):
         code, out, _ = run_cli('--version')
         self.assertEqual(code, 0)
-        self.assertIn('1.1.0', out)
+        self.assertIn('1.1.1', out)
 
     def test_missing_file(self):
         code, _, err = run_cli(os.path.join(self.tmp, 'nope.pdf'))
@@ -244,6 +296,15 @@ class TestPdf(BaseCase):
         self.assertIn('95.11', out)
         self.assertIn('===== PAGE 1 =====', out)
         self.assertIn('===== PAGE 4 =====', out)
+
+    def test_surrogate_pair_cmap_destination(self):
+        # Regression: <D835DC50> is a UTF-16BE surrogate pair, not one int.
+        path = os.path.join(self.tmp, 'surrogate_cmap.pdf')
+        make_pdf_with_surrogate_cmap(path)
+        code, out, err = run_cli(path)
+        self.assertEqual(code, 0, err)
+        self.assertIn('Radiative', out)
+        self.assertIn('\U0001D450', out)
 
     def test_page_selection(self):
         code, out, _ = run_cli(self.pdf, '--pages', '2')

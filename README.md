@@ -1,5 +1,9 @@
 # thesis-analysis-extract
 
+**v1.1.1：修复部分 PDF 数学字符提取崩溃，完整保留多字符映射，延续精简阅读模式。**
+
+**v1.1.1: Fix PDF math-character crashes and preserve multi-character mappings, with lean reading retained.**
+
 **帮助 AI 读论文，整理主要内容、创新点、机理和实验步骤。**
 
 **Help AI read papers and summarize their main findings, innovations, mechanisms, and experimental steps.**

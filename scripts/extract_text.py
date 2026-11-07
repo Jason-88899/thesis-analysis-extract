@@ -224,11 +224,26 @@ class PdfFile:
         for blk in re.finditer(rb'beginbfrange(.*?)endbfrange', data, re.S):
             body = blk.group(1)
             for m in re.finditer(rb'<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>', body):
-                a, b, c = (int(m.group(i), 16) for i in (1, 2, 3))
+                a, b = int(m.group(1), 16), int(m.group(2), 16)
                 if b - a > 65535:
                     raise ValueError('PDF CMap range exceeds the supported limit')
+                try:
+                    raw = bytes.fromhex(m.group(3).decode('ascii'))
+                except ValueError:
+                    continue
+                # A bfrange increments the final byte of the UTF-16BE string.
+                # Decode the whole string to preserve surrogate pairs and
+                # multi-character destinations (for example ligatures).
+                if not raw or len(raw) % 2:
+                    continue
                 for off in range(b - a + 1):
-                    cmap[a + off] = chr(c + off)
+                    if raw[-1] + off > 255:
+                        break
+                    dest = raw[:-1] + bytes([raw[-1] + off])
+                    try:
+                        cmap[a + off] = dest.decode('utf-16-be')
+                    except UnicodeDecodeError:
+                        continue
             for m in re.finditer(rb'<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*\[(.*?)\]', body, re.S):
                 a = int(m.group(1), 16)
                 for off, val in enumerate(re.findall(rb'<([0-9A-Fa-f]+)>', m.group(3))):
@@ -979,7 +994,7 @@ def main(argv=None):
     ap.add_argument('--stats', action='store_true',
                     help='print per-page character/token stats to stderr')
     ap.add_argument('--version', action='version',
-                    version='thesis-analysis-extract 1.1.0')
+                    version='thesis-analysis-extract 1.1.1')
     args = ap.parse_args(argv)
 
     def report(*values):
